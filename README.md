@@ -7,7 +7,7 @@
 </p>
 
 [![License: MIT](https://img.shields.io/badge/license-MIT-blue.svg)](https://opensource.org/licenses/MIT)
-[![Release](https://github/Eamon2009/Quadtirx.cpp)](https://github.com/Eamon2009/Quadtrix.cpp/releases/tag/v1.01)
+[[Release](https://github.com/Eamon2009/Quadtrix.cpp/releases/tag/v1.01)]
 
 ## Quadtrix.cpp a autoregressive language model in two variants:
 
