@@ -1,13 +1,13 @@
 # Quadtrix.cpp  <p align="center">
-  <a href="https://eamon2009.github.io/LLM/">
+ 
+<img width="1550" height="393" alt="image" src="https://github.com/user-attachments/assets/22b8f8de-362d-40f7-8313-6a14f94cc647" />
+ <a href="https://eamon2009.github.io/LLM/">
     <img src="https://img.shields.io/badge/Quadtrix-Paper-blue?style=for-the-badge">
   </a>
 </p>
-<img width="1550" height="393" alt="image" src="https://github.com/user-attachments/assets/22b8f8de-362d-40f7-8313-6a14f94cc647" />
 
-<img width="1010" height="727" alt="image" src="https://github.com/user-attachments/assets/b52fdbe7-9fe2-4415-9282-d0b97cb00165" />
-
-
+[![License: MIT](https://img.shields.io/badge/license-MIT-blue.svg)](https://opensource.org/licenses/MIT)
+[![Release](https://img.shields.io/github/v/release/Eamon2009/Quadtirx.cpp)](https://github.com/Eamon2009/Quadtrix.cpp/releases)
 
 ## Quadtrix.cpp a autoregressive language model in two variants:
 
@@ -22,6 +22,9 @@ Training Pipeline: Both versions follow standard autoregressive training: tokeni
 
 
 GPU Extension Limitation: A native CUDA implementation (custom kernels for matrix ops, attention, etc.) requires access to NVIDIA hardware for development and testing, currently unavailable. The PyTorch version serves as a GPU-accelerated alternative without requiring hand-written CUDA 
+<img width="1010" height="727" alt="image" src="https://github.com/user-attachments/assets/b52fdbe7-9fe2-4415-9282-d0b97cb00165" />
+
+
 
 ---
 #  Leaderboard
