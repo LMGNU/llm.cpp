@@ -9,3 +9,5 @@ frontend/dist/
 .venv
 build
 CMakeCache.txt
+*best_model.pt
+*exe
