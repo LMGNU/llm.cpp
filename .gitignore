@@ -14,3 +14,4 @@ engine/fine-tune/input.txt
 *best_model.pt
 *.pt
 *exe
+PUBLISHING.md
