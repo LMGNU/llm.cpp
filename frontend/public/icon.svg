@@ -1,0 +1,75 @@
+<svg width="1920" height="1080" viewBox="0 0 1920 1080" xmlns="http://www.w3.org/2000/svg">
+
+  <!-- Background -->
+  <rect width="1920" height="1080" fill="#05070D"/>
+
+  <!-- Gradient -->
+  <defs>
+    <linearGradient id="grad" x1="0" y1="0" x2="1" y2="1">
+      <stop offset="0%" stop-color="#7C3AED"/>
+      <stop offset="100%" stop-color="#22D3EE"/>
+    </linearGradient>
+  </defs>
+
+  <!-- CENTER GROUP -->
+  <g transform="translate(960,540) scale(2.2) translate(-256,-256)">
+
+    <!-- Hexagon -->
+    <polygon points="256,70 390,150 390,362 256,442 122,362 122,150"
+             fill="none"
+             stroke="url(#grad)"
+             stroke-width="10"
+             stroke-linejoin="round"/>
+
+    <!-- Left circuits -->
+    <g stroke="url(#grad)" stroke-width="4" fill="none" stroke-linecap="round">
+      <line x1="122" y1="220" x2="90" y2="220"/>
+      <line x1="122" y1="256" x2="70" y2="256"/>
+      <line x1="122" y1="292" x2="90" y2="292"/>
+
+      <circle cx="70" cy="256" r="4" fill="#7C3AED"/>
+      <circle cx="90" cy="220" r="4" fill="#7C3AED"/>
+      <circle cx="90" cy="292" r="4" fill="#7C3AED"/>
+    </g>
+
+    <!-- Right circuits -->
+    <g stroke="url(#grad)" stroke-width="4" fill="none" stroke-linecap="round">
+      <line x1="390" y1="220" x2="422" y2="220"/>
+      <line x1="390" y1="256" x2="442" y2="256"/>
+      <line x1="390" y1="292" x2="422" y2="292"/>
+
+      <circle cx="442" cy="256" r="4" fill="#22D3EE"/>
+      <circle cx="422" cy="220" r="4" fill="#22D3EE"/>
+      <circle cx="422" cy="292" r="4" fill="#22D3EE"/>
+    </g>
+
+    <!-- > -->
+    <text x="180" y="275"
+          font-family="monospace"
+          font-size="90"
+          fill="#E5E7EB">
+      &gt;
+    </text>
+
+    <!-- _ -->
+    <rect x="235" y="290" width="40" height="6" rx="3" fill="#E5E7EB"/>
+
+    <!-- C -->
+    <text x="285" y="275"
+          font-family="monospace"
+          font-size="90"
+          fill="url(#grad)">
+      C
+    </text>
+
+    <!-- ++ -->
+    <text x="350" y="245"
+          font-family="monospace"
+          font-size="40"
+          fill="#E5E7EB">
+      ++
+    </text>
+
+  </g>
+
+</svg>
