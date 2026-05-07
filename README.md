@@ -1,23 +1,16 @@
 # Quadtrix.cpp
-
-<p align="center">
-  <img width="1550" height="393" alt="Quadtrix banner" src="https://github.com/user-attachments/assets/22b8f8de-362d-40f7-8313-6a14f94cc647" />
-
-  <a href="https://eamon2009.github.io/LLM/">
-    <img src="https://img.shields.io/badge/Quadtrix-Paper-blue?style=for-the-badge" alt="Quadtrix Paper">
-  </a>
-</p>
-
-[![License: MIT](https://img.shields.io/badge/license-MIT-blue.svg)](https://opensource.org/licenses/MIT)
-[[Release](https://github.com/Eamon2009/Quadtrix.cpp/releases/tag/v1.01)]
-
-Quadtrix.cpp is a local GPT-style language model project with several execution paths:
+Quadtrix.cpp is a local language model project with several execution paths:
 
 - A dependency-free C++17 transformer implementation with manual forward and backward passes.
 - A PyTorch training and inference path for faster experimentation on CPU, CUDA, or supported accelerator backends.
 - A FastAPI middleware layer for chat sessions, health checks, backend selection, and feedback.
 - A React + TypeScript frontend for local chat, settings, session history, and model status.
 - Optional package/CLI support through `bin/quadtrix.js`.
+
+
+> [!IMPORTANT]
+> Please be aware that several commands listed in this documentation—specifically those involving file paths and directory navigation—should not be directly copied and pasted into your terminal. Because file structures and path syntax (such as / vs \) vary significantly across operating systems like Windows, macOS, and Linux, you must manually adjust these arguments to match your local environment. Ensure you verify your current working directory and replace any placeholder paths with the absolute or relative path specific to your machine to avoid execution errors.
+
 
 The project is designed as a technical learning implementation. The C++ path exposes the transformer internals directly: tensor operations, attention, layer normalization, cross-entropy, analytical gradients, AdamW, checkpointing, and autoregressive generation.
 
