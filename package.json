@@ -1,6 +1,6 @@
 {
   "name": "quadtrix",
-  "version": "1.0.1",
+  "version": "1.0.2",
   "description": "CLI for running Quadtrix.cpp chat and local training.",
   "license": "MIT",
   "author": "Eamon",
