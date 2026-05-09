@@ -961,4 +961,4 @@ g++ -std=c++17 -O2 -I. -Iinclude -o quadtrix.exe main.cpp
 
 ## License
 
-This project is released under the MIT License. See `LICENSE`.
+MIT
