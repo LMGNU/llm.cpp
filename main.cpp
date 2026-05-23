@@ -122,10 +122,6 @@ static float estimate_loss(GPTLanguageModel &model,
 }
 
 // Chat window
-// Encodes a user prompt string into token indices using the
-// DataLoader's vocabulary, then feeds them into model.generate().
-// Only touches the public encode/decode/generate interface —
-// zero changes to math or training logic.
 static void run_chat(GPTLanguageModel &model,
                      DataLoader &dl,
                      int max_new_tokens)
@@ -139,19 +135,17 @@ static void run_chat(GPTLanguageModel &model,
 
       while (!g_interrupted)
       {
-            // input
             std::cout << "\033[1;32mYou>\033[0m ";
             std::cout.flush();
 
             std::string prompt;
             if (!std::getline(std::cin, prompt))
-                  break; // EOF (piped input ended)
+                  break;
 
-            // Trim leading/trailing whitespace
             size_t s = prompt.find_first_not_of(" \t\r\n");
             size_t e = prompt.find_last_not_of(" \t\r\n");
             if (s == std::string::npos)
-                  continue; // blank line — ask again
+                  continue;
             prompt = prompt.substr(s, e - s + 1);
 
             if (prompt == "quit" || prompt == "exit")
@@ -160,23 +154,15 @@ static void run_chat(GPTLanguageModel &model,
                   break;
             }
 
-            // Encode prompt
-            // dl.encode() maps the raw string through the same
-            // char-level (or BPE) vocab built during data loading.
             std::vector<int> ctx = dl.encode(prompt);
             if (ctx.empty())
             {
-                  // If the vocab doesn't cover some characters,
-                  // fall back to the BOS token so generation can
-                  // still start rather than crashing.
                   ctx = {0};
             }
 
-            // Clamp context to BLOCK_SIZE (model's max sequence length)
             if ((int)ctx.size() > BLOCK_SIZE)
                   ctx = std::vector<int>(ctx.end() - BLOCK_SIZE, ctx.end());
 
-            // Stream model response token-by-token
             std::cout << "\033[1;36mQuadtrix>\033[0m ";
             std::cout.flush();
 
@@ -185,7 +171,6 @@ static void run_chat(GPTLanguageModel &model,
                   ctx = model.generate(ctx, 1);
                   std::cout << dl.decode({ctx.back()}) << std::flush;
 
-                  // Keep context within BLOCK_SIZE window
                   if ((int)ctx.size() > BLOCK_SIZE)
                         ctx = std::vector<int>(ctx.end() - BLOCK_SIZE, ctx.end());
             }
@@ -215,17 +200,17 @@ int main(int argc, char *argv[])
             model_path = env_model_path;
 
       bool gen_mode = false;
-      bool chat_mode = false; // ← NEW flag
-      int chat_tokens = 200;  // default tokens per reply
+      bool chat_mode = false;
+      int chat_tokens = 200;
 
       for (int i = 1; i < argc; ++i)
       {
             std::string a = argv[i];
             if (a == "--generate")
                   gen_mode = true;
-            else if (a == "--chat") // ← NEW
+            else if (a == "--chat")
                   chat_mode = true;
-            else if (a == "--chat-tokens" && i + 1 < argc) // ← NEW (optional)
+            else if (a == "--chat-tokens" && i + 1 < argc)
                   chat_tokens = std::atoi(argv[++i]);
             else
                   data_path = a;
@@ -271,7 +256,7 @@ int main(int argc, char *argv[])
                 << N_EMBD << " embedding dim\n";
 
       // chat mode
-      if (chat_mode) // NEW block
+      if (chat_mode)
       {
             if (!file_exists(model_path))
             {
@@ -336,6 +321,7 @@ int main(int argc, char *argv[])
 
       float best_val_loss = 1e30f;
       double train_start = wall_secs();
+      double last_eval_time = train_start; // ← tracks time of previous eval
 
       for (int iter = 0; iter <= MAX_ITERS && !g_interrupted; ++iter)
       {
@@ -343,41 +329,47 @@ int main(int argc, char *argv[])
             // Periodic eval checkpoint
             if (iter % EVAL_INTERVAL == 0 || iter == MAX_ITERS)
             {
-                  if (iter == 0)
-                  {
-                        std::cout << "[INFO] Running initial loss estimate (" << EVAL_ITERS
-                                  << " train batches + " << EVAL_ITERS
-                                  << " val batches). This can take a while on CPU...\n";
-                  }
-                  else
-                  {
-                        std::cout << "[INFO] Evaluating checkpoint at iter " << iter
-                                  << "/" << MAX_ITERS << "...\n";
-                  }
-                  std::cout.flush();
+                  double now = wall_secs();
+                  double elapsed = now - train_start;
+
+                  // ms per training step since the last eval window
+                  double window_secs = now - last_eval_time;
+                  int steps_in_win = (iter == 0) ? 1 : EVAL_INTERVAL;
+                  double ms_per_step = window_secs * 1000.0 / steps_in_win;
+
+                  // tokens processed per second
+                  long toks_in_win = (long)BATCH_SIZE * BLOCK_SIZE * steps_in_win;
+                  int tok_per_sec = (window_secs > 0.0)
+                                        ? (int)(toks_in_win / window_secs)
+                                        : 0;
+
+                  last_eval_time = now; // reset window
 
                   float tl = estimate_loss(model, dl, "train", rng);
                   float vl = estimate_loss(model, dl, "val", rng);
 
-                  double elapsed = wall_secs() - train_start;
-                  double eta = (iter > 0) ? elapsed / iter * (MAX_ITERS - iter) : 0.0;
-                  float pct = 100.0f * iter / MAX_ITERS;
                   bool better = vl < best_val_loss;
-
                   if (better)
                   {
                         best_val_loss = vl;
                         model.save(model_path);
                   }
 
-                  std::cout << "[" << std::setw(5) << iter << "/" << MAX_ITERS << "] "
-                            << std::fixed << std::setprecision(1) << pct << "%  "
-                            << "train=" << std::setprecision(4) << tl
-                            << "  val=" << vl
-                            << "  elapsed=" << std::setprecision(0) << elapsed << "s"
-                            << "  ETA=" << eta << "s"
-                            << (better ? "  << best!" : "")
-                            << "\n";
+                  // ── new log line ─────────────────────────────────────────────
+                  std::cout
+                      << "step "
+                      << std::setw(5) << iter << "/" << MAX_ITERS
+                      << " | loss "
+                      << std::fixed << std::setprecision(6) << tl
+                      << " | val "
+                      << std::fixed << std::setprecision(6) << vl
+                      << " | lr "
+                      << std::scientific << std::setprecision(2) << (float)LEARNING_RATE
+                      << " | "
+                      << std::fixed << std::setprecision(2) << ms_per_step << " ms"
+                      << " | " << tok_per_sec << " tok/s"
+                      << (better ? "  *best*" : "")
+                      << "\n";
                   std::cout.flush();
 
                   if (iter == MAX_ITERS)
@@ -407,7 +399,7 @@ int main(int argc, char *argv[])
                 << std::setprecision(4) << best_val_loss << "\n";
       std::cout << "[SAVE]  Best weights saved to " << model_path << "\n";
 
-      //  Continuous generation (mirrors Python's while True loop)
+      //  Continuous generation
       std::cout << "\n"
                 << std::string(60, '-') << "\n";
       std::cout << "  MODEL OUTPUT  (Ctrl+C to stop)\n";
