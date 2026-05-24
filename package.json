@@ -26,13 +26,11 @@
     "engine/*.py",
     "engine/engine.c",
     "frontend/dist/",
-    "iGPU/*.py",
+    "gpu/",
     "include/",
-    "src/",
     "main.cpp",
     "LICENSE",
     "README.md",
-    "PUBLISHING.md",
     "run.md"
   ],
   "scripts": {
