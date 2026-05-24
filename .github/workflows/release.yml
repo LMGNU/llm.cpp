@@ -33,7 +33,7 @@ jobs:
         run: g++ -std=c++17 -O2 -I. -Iinclude -o quadtrix main.cpp
 
       - name: Compile Python sources
-        run: python -m compileall backend engine iGPU
+        run: python -m compileall backend engine
 
       - name: Build frontend
         working-directory: frontend
@@ -48,7 +48,7 @@ jobs:
             --exclude='engine/logs' \
             --exclude='__pycache__' \
             -czf quadtrix-linux.tar.gz \
-            quadtrix README.md LICENSE run.md backend engine iGPU include src data config frontend/dist
+            quadtrix README.md LICENSE run.md backend engine gpu include main.cpp data config frontend/dist
 
       - name: Create GitHub release
         uses: softprops/action-gh-release@v2
