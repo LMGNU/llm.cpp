@@ -1,14 +1,21 @@
 name: Publish Docker image
-
 on:
   push:
     branches:
       - master
     tags:
       - "v*.*.*"
+    paths-ignore:
+      - 'cuda/**'
+      - 'docs/**'
+      - '**.md'
   pull_request:
     branches:
       - master
+    paths-ignore:
+      - 'cuda/**'
+      - 'docs/**'
+      - '**.md'
 
 env:
   REGISTRY: ghcr.io
