@@ -15,17 +15,7 @@ on:
     paths-ignore:
       - 'docs/**'
       - '**.md'
-  workflow_dispatch:            
-    inputs:
-      variant:
-        description: 'Which variant to build'
-        required: true
-        default: 'both'
-        type: choice
-        options:
-          - both
-          - cpu
-          - cuda
+  workflow_dispatch:      
 
 concurrency:
   group: ${{ github.workflow }}-${{ github.ref }}
@@ -52,11 +42,6 @@ jobs:
           - variant: cuda
             dockerfile: Dockerfile.cuda
             tag_suffix: "-cuda"
-
-    if: |
-      github.event.inputs.variant == null ||
-      github.event.inputs.variant == 'both' ||
-      github.event.inputs.variant == matrix.variant
 
     steps:
       - name: Checkout repository
