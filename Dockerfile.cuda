@@ -1,4 +1,4 @@
-FROM ubuntu:24.04 AS build
+FROM nvidia/cuda:12.9.2-cudnn-devel-ubuntu24.04 AS build
 
 ARG DEBIAN_FRONTEND=noninteractive
 
@@ -7,34 +7,28 @@ RUN apt-get update && apt-get install -y --no-install-recommends \
       python3-pip \
       python3-venv \
       git \
-      && rm -rf /var/lib/apt/lists/* /tmp/* /var/tmp/*
+    && rm -rf /var/lib/apt/lists/*
 
 WORKDIR /app
 
 RUN python3 -m venv /app/venv
 ENV PATH="/app/venv/bin:$PATH"
 
-# Upgrade pip to reduce dependency resolution issues
-RUN pip install --upgrade --no-cache-dir pip setuptools wheel
+COPY requirements.txt .
 
-# Install PyTorch first (largest package)
 RUN pip install --no-cache-dir torch torchvision torchaudio \
-    --index-url https://download.pytorch.org/whl/cu128
+      --index-url https://download.pytorch.org/whl/cu128 \
+    && pip install --no-cache-dir -r requirements.txt
 
-# Copy requirements and install
-COPY requirements.txt backend/requirements.txt ./
-RUN pip install --no-cache-dir -r backend/requirements.txt && \
-    pip install --no-cache-dir -r requirements.txt && \
-    rm -rf ~/.cache/pip/* /tmp/*
-
-FROM ubuntu:24.04 AS runtime
+FROM nvidia/cuda:12.9.2-cudnn-runtime-ubuntu24.04 AS runtime
 
 ARG DEBIAN_FRONTEND=noninteractive
 
 RUN apt-get update && apt-get install -y --no-install-recommends \
       python3 \
       libgomp1 \
-      && rm -rf /var/lib/apt/lists/* /tmp/* /var/tmp/*
+      libgl1 \
+    && rm -rf /var/lib/apt/lists/*
 
 WORKDIR /app
 
@@ -43,5 +37,8 @@ COPY . .
 
 ENV PATH="/app/venv/bin:$PATH"
 ENV PYTHONUNBUFFERED=1
+ENV NVIDIA_VISIBLE_DEVICES=all
+ENV NVIDIA_DRIVER_CAPABILITIES=compute,utility
 
-ENTRYPOINT ["python3", "engine/main.py"]
+# Use the venv python directly — avoids PATH resolution ambiguity
+ENTRYPOINT ["/app/venv/bin/python3", "engine/main.py"]
