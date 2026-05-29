@@ -1,5 +1,4 @@
 import { motion } from "framer-motion";
-
 import { useStats } from "../../api/health";
 import { useSettingsStore } from "../../store/settingsStore";
 import { formatDuration } from "../../utils/time";
@@ -10,9 +9,7 @@ export function StatsPanel() {
   const setStatsOpen = useSettingsStore((state) => state.setStatsOpen);
   const { data, isLoading, isError } = useStats();
 
-  if (!statsOpen) {
-    return null;
-  }
+  if (!statsOpen) return null;
 
   const rows = data
     ? [
@@ -32,23 +29,62 @@ export function StatsPanel() {
   return (
     <motion.aside
       animate={{ x: 0 }}
-      className="fixed right-0 top-0 z-40 h-full w-[264px] border-l border-[var(--border-subtle)] bg-surface p-4 shadow-2xl"
-      initial={{ x: 264 }}
-      transition={{ duration: 0.18 }}
+      initial={{ x: 280 }}
+      transition={{ duration: 0.18, ease: "easeOut" }}
+      style={{
+        position: "fixed",
+        right: 0,
+        top: 0,
+        zIndex: 40,
+        height: "100%",
+        width: 280,
+        borderLeft: "1px solid var(--border-subtle)",
+        background: "var(--bg-surface)",
+        boxShadow: "-16px 0 48px rgba(0,0,0,0.4)",
+        display: "flex",
+        flexDirection: "column",
+      }}
     >
-      <div className="mb-6 flex items-center justify-between">
-        <h2 className="text-sm font-semibold text-[var(--text-primary)]">Model Stats</h2>
-        <Button className="h-8 px-2" onClick={() => setStatsOpen(false)}>
-          x
+      {/* Header */}
+      <div
+        style={{
+          display: "flex",
+          alignItems: "center",
+          justifyContent: "space-between",
+          padding: "14px 16px",
+          borderBottom: "1px solid var(--border-subtle)",
+        }}
+      >
+        <span style={{ fontSize: 13, fontWeight: 600, color: "var(--text-primary)" }}>Model Stats</span>
+        <Button onClick={() => setStatsOpen(false)} style={{ height: 28, padding: "0 8px", fontSize: 11 }}>
+          Close
         </Button>
       </div>
-      {isLoading && <div className="text-sm text-[var(--text-secondary)]">Loading stats...</div>}
-      {isError && <div className="text-sm text-red-300">Stats unavailable</div>}
-      <div className="space-y-3">
+
+      {/* Content */}
+      <div style={{ flex: 1, overflowY: "auto", padding: "12px 16px" }}>
+        {isLoading && (
+          <div style={{ fontSize: 12, color: "var(--text-muted)", padding: "8px 0" }}>Loading stats…</div>
+        )}
+        {isError && (
+          <div style={{ fontSize: 12, color: "var(--red)", padding: "8px 0" }}>Stats unavailable</div>
+        )}
         {rows.map(([label, value]) => (
-          <div className="flex items-start justify-between gap-3 border-b border-[var(--border-subtle)] pb-2" key={label}>
-            <span className="text-xs text-[var(--text-muted)]">{label}</span>
-            <span className="text-right text-xs text-[var(--text-primary)]">{value}</span>
+          <div
+            key={label}
+            style={{
+              display: "flex",
+              justifyContent: "space-between",
+              alignItems: "flex-start",
+              gap: 12,
+              padding: "9px 0",
+              borderBottom: "1px solid var(--border-subtle)",
+            }}
+          >
+            <span style={{ fontSize: 11, color: "var(--text-muted)", flexShrink: 0 }}>{label}</span>
+            <span style={{ fontSize: 11, color: "var(--text-primary)", textAlign: "right", wordBreak: "break-all" }}>
+              {value}
+            </span>
           </div>
         ))}
       </div>

@@ -1,34 +1,28 @@
 name: Publish Docker image
 on:
-  push:
-    branches:
-      - master
-    tags:
-      - "v*.*.*"
-    paths-ignore:
-      - 'cuda/**'
-      - 'docs/**'
-      - '**.md'
-  pull_request:
-    branches:
-      - master
-    paths-ignore:
-      - 'cuda/**'
-      - 'docs/**'
-      - '**.md'
-
+  workflow_dispatch:      
+concurrency:
+  group: ${{ github.workflow }}-${{ github.ref }}
+  cancel-in-progress: true
 env:
   REGISTRY: ghcr.io
-
 jobs:
   build-and-push:
-    name: Build & push to ghcr.io
+    name: Build & push (${{ matrix.variant }})
     runs-on: ubuntu-latest
-
     permissions:
       contents: read
       packages: write
-
+    strategy:
+      fail-fast: false
+      matrix:
+        include:
+          - variant: cpu
+            dockerfile: Dockerfile
+            tag_suffix: ""
+          - variant: cuda
+            dockerfile: Dockerfile.cuda
+            tag_suffix: "-cuda"
     steps:
       - name: Checkout repository
         uses: actions/checkout@v4
@@ -36,13 +30,11 @@ jobs:
         id: image
         run: |
           echo "name=$(echo '${{ github.repository }}' | tr '[:upper:]' '[:lower:]')" >> $GITHUB_OUTPUT
-
       - name: Set up QEMU
         uses: docker/setup-qemu-action@v3
       - name: Set up Docker Buildx
         uses: docker/setup-buildx-action@v3
       - name: Log in to ghcr.io
-        if: github.event_name != 'pull_request'
         uses: docker/login-action@v3
         with:
           registry: ${{ env.REGISTRY }}
@@ -54,29 +46,28 @@ jobs:
         with:
           images: ${{ env.REGISTRY }}/${{ steps.image.outputs.name }}
           tags: |
-            type=raw,value=latest,enable={{is_default_branch}}
-            type=semver,pattern={{version}}
-            type=semver,pattern={{major}}.{{minor}}
-            type=ref,event=pr
-      - name: Build and push Docker image (CPU)
+            type=raw,value=latest${{ matrix.tag_suffix }},enable={{is_default_branch}}
+            type=semver,pattern={{version}},suffix=${{ matrix.tag_suffix }}
+            type=semver,pattern={{major}}.{{minor}},suffix=${{ matrix.tag_suffix }}
+            type=ref,event=pr,suffix=${{ matrix.tag_suffix }}
+      - name: Free disk space
+        if: matrix.variant == 'cuda'
+        run: |
+          sudo rm -rf /usr/share/dotnet
+          sudo rm -rf /opt/ghc
+          sudo rm -rf /usr/local/share/boost
+          df -h
+      - name: Build and push Docker image
         uses: docker/build-push-action@v6
         with:
           context: .
-          file: ./Dockerfile
-          push: ${{ github.event_name != 'pull_request' }}
+          file: ./${{ matrix.dockerfile }}
+          push: true
           tags: ${{ steps.meta.outputs.tags }}
           labels: ${{ steps.meta.outputs.labels }}
-          build-args: |
-            BASE_IMAGE=ubuntu:24.04
-          cache-from: type=gha
-          cache-to: type=gha,mode=max
+          cache-from: type=gha,scope=${{ matrix.variant }}
+          cache-to: type=gha,mode=max,scope=${{ matrix.variant }}
       - name: Image published
-        if: github.event_name != 'pull_request'
         run: |
-          echo "Image published to GitHub Packages"
-          echo ""
-          echo "Pull with:"
-          echo "  docker pull ${{ env.REGISTRY }}/${{ steps.image.outputs.name }}:latest"
-          echo ""
-          echo "Or via docker-compose:"
-          echo "  image: ${{ env.REGISTRY }}/${{ steps.image.outputs.name }}:latest"
+          echo "[${{ matrix.variant }}] published:"
+          echo "  docker pull ${{ env.REGISTRY }}/${{ steps.image.outputs.name }}:latest${{ matrix.tag_suffix }}"
