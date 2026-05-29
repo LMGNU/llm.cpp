@@ -5,15 +5,61 @@ interface ButtonProps extends ButtonHTMLAttributes<HTMLButtonElement> {
   children: ReactNode;
 }
 
-export function Button({ variant = "ghost", className = "", children, ...props }: ButtonProps) {
-  const variants = {
-    primary: "border border-[var(--border-strong)] bg-[var(--text-primary)] text-black hover:bg-white disabled:border-[var(--border-muted)] disabled:bg-[var(--bg-hover)] disabled:text-[var(--text-muted)]",
-    ghost: "border border-[var(--border-muted)] bg-transparent text-[var(--text-primary)] hover:border-[var(--border-strong)] hover:bg-hover",
-    danger: "border border-red-500/30 text-red-300 hover:bg-red-500/10",
+export function Button({ variant = "ghost", className = "", children, style, ...props }: ButtonProps) {
+  const base: React.CSSProperties = {
+    display: "inline-flex",
+    alignItems: "center",
+    justifyContent: "center",
+    height: 32,
+    padding: "0 10px",
+    borderRadius: 6,
+    fontSize: 12,
+    fontWeight: 500,
+    cursor: "pointer",
+    transition: "background 0.12s, border-color 0.12s, color 0.12s",
   };
+
+  const variants: Record<string, React.CSSProperties> = {
+    primary: {
+      background: "linear-gradient(135deg, #4f8ef7 0%, #2563eb 100%)",
+      border: "none",
+      color: "#fff",
+    },
+    ghost: {
+      background: "transparent",
+      border: "1px solid var(--border-muted)",
+      color: "var(--text-secondary)",
+    },
+    danger: {
+      background: "transparent",
+      border: "1px solid rgba(224,82,82,0.3)",
+      color: "var(--red)",
+    },
+  };
+
   return (
     <button
-      className={`inline-flex h-9 items-center justify-center rounded-md px-3 text-sm font-medium transition disabled:cursor-not-allowed disabled:opacity-50 ${variants[variant]} ${className}`}
+      style={{ ...base, ...variants[variant], ...style }}
+      onMouseEnter={(e) => {
+        const el = e.currentTarget;
+        if (variant === "ghost") {
+          el.style.background = "var(--bg-elevated)";
+          el.style.borderColor = "var(--border-strong)";
+          el.style.color = "var(--text-primary)";
+        } else if (variant === "danger") {
+          el.style.background = "rgba(224,82,82,0.1)";
+        }
+      }}
+      onMouseLeave={(e) => {
+        const el = e.currentTarget;
+        if (variant === "ghost") {
+          el.style.background = "transparent";
+          el.style.borderColor = "var(--border-muted)";
+          el.style.color = "var(--text-secondary)";
+        } else if (variant === "danger") {
+          el.style.background = "transparent";
+        }
+      }}
       {...props}
     >
       {children}
