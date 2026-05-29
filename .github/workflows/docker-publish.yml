@@ -1,8 +1,11 @@
 name: Release
 
 on:
-  push:
-    tags: ["v*.*.*"]
+  workflow_dispatch:
+    inputs:
+      version:
+        description: "Version tag (e.g. 1.2.3)"
+        required: true
 
 env:
   REGISTRY: ghcr.io
@@ -52,8 +55,10 @@ jobs:
       - name: Upload to Release
         uses: softprops/action-gh-release@v2
         with:
+          tag_name: v${{ github.event.inputs.version }}
           files: ${{ matrix.artifact_name }}.tar.gz
           generate_release_notes: true
+
   publish-images:
     name: Publish Docker images
     runs-on: ubuntu-latest
@@ -75,13 +80,13 @@ jobs:
 
       - name: Parse tag
         id: tag
-        run: echo "VERSION=${GITHUB_REF_NAME#v}" >> $GITHUB_OUTPUT
+        run: echo "VERSION=${{ github.event.inputs.version }}" >> $GITHUB_OUTPUT
 
       - name: Build & push backend
         uses: docker/build-push-action@v6
         with:
           context: .
-          file: docker/Dockerfile.backend
+          file: .devops/Dockerfile.backend
           platforms: linux/amd64,linux/arm64
           push: true
           tags: |
@@ -94,7 +99,7 @@ jobs:
         uses: docker/build-push-action@v6
         with:
           context: .
-          file: docker/Dockerfile.frontend
+          file: .devops/Dockerfile.frontend
           platforms: linux/amd64,linux/arm64
           push: true
           tags: |
@@ -107,7 +112,7 @@ jobs:
         uses: docker/build-push-action@v6
         with:
           context: .
-          file: docker/Dockerfile.cpp
+          file: .devops/Dockerfile.cpp
           platforms: linux/amd64,linux/arm64
           push: true
           tags: |
