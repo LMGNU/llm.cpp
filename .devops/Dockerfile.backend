@@ -1,0 +1,88 @@
+# =============================================================================
+# Quadtrix.cpp — Python Backend  (FastAPI + PyTorch)
+# Supports: CPU-only (default), CUDA (--build-arg CUDA=1)
+# =============================================================================
+
+ARG CUDA=0
+
+# ── Stage 1: Base selector ────────────────────────────────────────────────────
+FROM python:3.11-slim AS base-cpu
+FROM nvidia/cuda:12.4.1-cudnn9-runtime-ubuntu22.04 AS base-cuda
+
+# ── Stage 2: Deps (CPU) ───────────────────────────────────────────────────────
+FROM base-cpu AS deps-cpu
+
+ARG DEBIAN_FRONTEND=noninteractive
+RUN apt-get update && apt-get install -y --no-install-recommends \
+    build-essential \
+    curl \
+    git \
+    && rm -rf /var/lib/apt/lists/*
+
+RUN pip install --upgrade pip
+
+WORKDIR /app
+
+COPY backend/requirements.txt ./requirements.txt
+RUN pip install --no-cache-dir -r requirements.txt \
+    && pip install --no-cache-dir \
+        torch==2.3.1+cpu \
+        torchvision==0.18.1+cpu \
+        -f https://download.pytorch.org/whl/cpu/torch_stable.html
+
+# ── Stage 2: Deps (CUDA) ──────────────────────────────────────────────────────
+FROM base-cuda AS deps-cuda
+
+ARG DEBIAN_FRONTEND=noninteractive
+RUN apt-get update && apt-get install -y --no-install-recommends \
+    python3.11 \
+    python3-pip \
+    build-essential \
+    curl \
+    git \
+    && rm -rf /var/lib/apt/lists/*
+
+RUN python3.11 -m pip install --upgrade pip
+
+WORKDIR /app
+
+COPY backend/requirements.txt ./requirements.txt
+RUN python3.11 -m pip install --no-cache-dir -r requirements.txt \
+    && python3.11 -m pip install --no-cache-dir torch==2.3.1 torchvision==0.18.1 \
+       --index-url https://download.pytorch.org/whl/cu121
+
+# ── Stage 3: Final (CPU default) ──────────────────────────────────────────────
+FROM deps-cpu AS final
+
+LABEL org.opencontainers.image.title="Quadtrix Python Backend"
+LABEL org.opencontainers.image.description="FastAPI + PyTorch inference layer"
+LABEL org.opencontainers.image.source="https://github.com/Eamon2009/Quadtrix.cpp"
+
+WORKDIR /app
+
+# Application source
+COPY backend/      ./backend/
+COPY engine/       ./engine/
+
+# Create writable model and log dirs
+RUN mkdir -p /models /app/engine/logs
+
+VOLUME ["/models"]
+
+ENV PYTHONUNBUFFERED=1 \
+    PYTHONDONTWRITEBYTECODE=1 \
+    TORCH_CHECKPOINT_PATH=/models/best_model.pt \
+    API_PORT=3001 \
+    LOG_LEVEL=INFO \
+    CORS_ORIGINS=http://localhost:5173
+
+EXPOSE 3001
+
+HEALTHCHECK --interval=30s --timeout=10s --start-period=15s --retries=3 \
+    CMD curl -f http://localhost:3001/api/health || exit 1
+
+WORKDIR /app/backend
+CMD ["python", "-m", "uvicorn", "main:app", \
+     "--host", "0.0.0.0", \
+     "--port", "3001", \
+     "--workers", "1"]
