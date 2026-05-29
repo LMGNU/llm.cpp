@@ -8,12 +8,44 @@ interface ModelBadgeProps {
 }
 
 export function ModelBadge({ online, degraded, label, tooltip }: ModelBadgeProps) {
-  const tone = online ? "bg-[var(--status-online)]" : degraded ? "animate-pulse bg-[var(--yellow)]" : "bg-[var(--red)]";
+  const dotColor = online
+    ? "var(--status-online)"
+    : degraded
+    ? "var(--yellow)"
+    : "var(--red)";
+
   return (
     <Tooltip label={tooltip}>
-      <div className="flex h-9 items-center gap-2 rounded-md border border-[var(--border-muted)] bg-surface px-3 text-sm text-[var(--text-secondary)]">
-        <span className={`h-2 w-2 rounded-full ${tone}`} />
-        <span className="max-w-48 truncate">{label}</span>
+      <div
+        style={{
+          display: "flex",
+          alignItems: "center",
+          gap: 7,
+          height: 32,
+          padding: "0 10px",
+          borderRadius: 6,
+          border: "1px solid var(--border-muted)",
+          background: "var(--bg-elevated)",
+          fontSize: 12,
+          color: "var(--text-secondary)",
+          cursor: "default",
+        }}
+      >
+        <span
+          style={{
+            width: 7,
+            height: 7,
+            borderRadius: "50%",
+            background: dotColor,
+            boxShadow: online ? `0 0 6px ${dotColor}` : "none",
+            animation: degraded ? "pulse 1.5s ease-in-out infinite" : "none",
+            flexShrink: 0,
+          }}
+        />
+        <style>{`@keyframes pulse { 0%,100%{opacity:1} 50%{opacity:0.4} }`}</style>
+        <span style={{ maxWidth: 160, overflow: "hidden", textOverflow: "ellipsis", whiteSpace: "nowrap" }}>
+          {label}
+        </span>
       </div>
     </Tooltip>
   );
