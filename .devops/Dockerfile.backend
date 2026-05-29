@@ -1,25 +1,48 @@
-ARG CUDA=1
+ARG CUDA=0
 
-FROM python:3.11-slim AS base-cpu
-FROM nvidia/cuda:12.4.1-cudnn9-runtime-ubuntu22.04 AS base-cuda
+FROM python:3.11-slim AS base-0
+
+FROM nvidia/cuda:12.4.1-cudnn9-runtime-ubuntu22.04 AS base-1
+RUN apt-get update && apt-get install -y --no-install-recommends \
+        python3.11 python3.11-dev python3-pip curl git build-essential \
+    && ln -sf python3.11 /usr/bin/python3 \
+    && ln -sf python3.11 /usr/bin/python \
+    && pip3 install --upgrade pip \
+    && rm -rf /var/lib/apt/lists/*
+
 
 FROM base-${CUDA} AS deps
-
+ARG CUDA=0
 ARG DEBIAN_FRONTEND=noninteractive
+
 RUN apt-get update && apt-get install -y --no-install-recommends \
-    build-essential \
-    curl \
-    git \
+        build-essential curl git \
     && rm -rf /var/lib/apt/lists/*
 
 RUN pip install --upgrade pip
 
 WORKDIR /app
 
+# Copy requirements but REMOVE bare torch line — we install it explicitly below
 COPY backend/requirements.txt ./requirements.txt
-RUN pip install --no-cache-dir -r requirements.txt \
-    && pip install --no-cache-dir torch==2.3.1 torchvision==0.18.1 \
-    --index-url https://download.pytorch.org/whl/cu121
+RUN grep -v "^torch" requirements.txt > requirements.clean.txt
+
+# Install everything except torch
+RUN pip install --no-cache-dir -r requirements.clean.txt
+
+# Install correct torch based on CUDA arg
+RUN if [ "$CUDA" = "1" ]; then \
+        pip install --no-cache-dir \
+            torch==2.3.1 \
+            torchvision==0.18.1 \
+            --index-url https://download.pytorch.org/whl/cu121; \
+    else \
+        pip install --no-cache-dir \
+            torch==2.3.1+cpu \
+            torchvision==0.18.1+cpu \
+            --index-url https://download.pytorch.org/whl/cpu; \
+    fi
+
 
 FROM deps AS final
 
@@ -28,10 +51,8 @@ LABEL org.opencontainers.image.description="FastAPI + PyTorch inference layer"
 LABEL org.opencontainers.image.source="https://github.com/Eamon2009/Quadtrix.cpp"
 
 WORKDIR /app
-
-COPY backend/      ./backend/
-COPY engine/       ./engine/
-
+COPY backend/ ./backend/
+COPY engine/  ./engine/
 RUN mkdir -p /models /app/engine/logs
 
 VOLUME ["/models"]
