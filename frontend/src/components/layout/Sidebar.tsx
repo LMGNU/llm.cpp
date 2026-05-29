@@ -45,17 +45,85 @@ export function Sidebar() {
   };
 
   return (
-    <aside className="hidden w-[264px] shrink-0 flex-col border-r border-[var(--border-subtle)] bg-surface p-3 md:flex">
-      <div className="mb-5 flex items-center gap-3 px-2 py-2">
-        <div className="flex h-9 w-9 items-center justify-center rounded-md bg-accent font-bold text-white">Q</div>
-        <div className="min-w-0">
-          <div className="truncate text-sm font-semibold text-[var(--text-primary)]">Quadtrix.cpp</div>
-          <div className="truncate text-xs text-[var(--text-muted)]">char-level GPT v1.0</div>
+    <aside
+      className="hidden md:flex"
+      style={{
+        width: "var(--sidebar-width)",
+        minWidth: "var(--sidebar-width)",
+        flexDirection: "column",
+        height: "100%",
+        background: "var(--bg-surface)",
+        borderRight: "1px solid var(--border-subtle)",
+        padding: "0",
+      }}
+    >
+      {/* Logo / App Header */}
+      <div
+        style={{
+          padding: "16px 14px 12px",
+          borderBottom: "1px solid var(--border-subtle)",
+          display: "flex",
+          alignItems: "center",
+          gap: "10px",
+        }}
+      >
+        <div
+          style={{
+            width: 32,
+            height: 32,
+            borderRadius: 8,
+            background: "linear-gradient(135deg, #4f8ef7 0%, #2563eb 100%)",
+            display: "flex",
+            alignItems: "center",
+            justifyContent: "center",
+            fontWeight: 700,
+            fontSize: 14,
+            color: "#fff",
+            flexShrink: 0,
+            letterSpacing: "-0.5px",
+          }}
+        >
+          Q
+        </div>
+        <div style={{ minWidth: 0 }}>
+          <div
+            style={{
+              fontSize: 13,
+              fontWeight: 600,
+              color: "var(--text-primary)",
+              letterSpacing: "0.01em",
+              whiteSpace: "nowrap",
+              overflow: "hidden",
+              textOverflow: "ellipsis",
+            }}
+          >
+            Quadtrix.cpp
+          </div>
+          <div style={{ fontSize: 11, color: "var(--text-muted)", marginTop: 1 }}>char-level GPT v1.0</div>
         </div>
       </div>
-      <NewChatButton onClick={newConversation} />
-      <div className="mt-6 text-xs font-semibold uppercase tracking-wider text-[var(--text-muted)]">Recent</div>
-      <div className="mt-2 min-h-0 flex-1">
+
+      {/* New Chat */}
+      <div style={{ padding: "10px 10px 6px" }}>
+        <NewChatButton onClick={newConversation} />
+      </div>
+
+      {/* Recent label */}
+      <div
+        style={{
+          padding: "8px 14px 4px",
+          fontSize: 10,
+          fontWeight: 600,
+          letterSpacing: "0.1em",
+          textTransform: "uppercase",
+          color: "var(--text-muted)",
+        }}
+      >
+        Recent
+      </div>
+
+      {/* Session list */}
+      <div style={{ flex: 1, minHeight: 0, overflowY: "auto", padding: "2px 6px" }}>
         <SessionList
           activeSessionId={activeSessionId}
           onDelete={deleteConversation}
@@ -63,7 +131,16 @@ export function Sidebar() {
           sessions={sessions}
         />
       </div>
-      <div className="mt-4 border-t border-[var(--border-subtle)] pt-4 text-xs text-[var(--text-muted)]">
+
+      {/* Footer */}
+      <div
+        style={{
+          padding: "10px 14px",
+          borderTop: "1px solid var(--border-subtle)",
+          fontSize: 11,
+          color: "var(--text-muted)",
+        }}
+      >
         API Configuration
       </div>
     </aside>
