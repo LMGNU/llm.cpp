@@ -158,22 +158,11 @@ jobs:
           if-no-files-found: error
           retention-days: 30
 
-  build-macos:
-    name: macOS ${{ matrix.arch }} CPU
+
+  build-macos-arm64:
+    name: macOS arm64 CPU
     needs: prepare-release
-    runs-on: ${{ matrix.runner }}
-    strategy:
-      fail-fast: false
-      matrix:
-        include:
-          - arch: x64
-            arch_flag: x86_64
-            runner: macos-13
-            artifact: quadtrix-macos-x64-cpu.tar.gz
-          - arch: arm64
-            arch_flag: arm64
-            runner: macos-14
-            artifact: quadtrix-macos-arm64-cpu.tar.gz
+    runs-on: macos-14
     steps:
       - uses: actions/checkout@v4
 
@@ -181,7 +170,7 @@ jobs:
         shell: bash
         run: |
           set -euo pipefail
-          clang++ -std=c++17 -O3 -arch ${{ matrix.arch_flag }} \
+          clang++ -std=c++17 -O3 -arch arm64 \
             -I. -Iinclude \
             -o quadtrix main.cpp
           file quadtrix
@@ -197,16 +186,16 @@ jobs:
         shell: bash
         run: |
           set -euo pipefail
-          mkdir -p "${ARTIFACT_ROOT}/quadtrix-macos-${{ matrix.arch }}-cpu"
-          cp quadtrix "${ARTIFACT_ROOT}/quadtrix-macos-${{ matrix.arch }}-cpu/"
-          cp README.md LICENSE "${ARTIFACT_ROOT}/quadtrix-macos-${{ matrix.arch }}-cpu/"
-          tar -czf "${{ matrix.artifact }}" -C "${ARTIFACT_ROOT}" "quadtrix-macos-${{ matrix.arch }}-cpu"
+          mkdir -p "${ARTIFACT_ROOT}/quadtrix-macos-arm64-cpu"
+          cp quadtrix "${ARTIFACT_ROOT}/quadtrix-macos-arm64-cpu/"
+          cp README.md LICENSE "${ARTIFACT_ROOT}/quadtrix-macos-arm64-cpu/"
+          tar -czf "quadtrix-macos-arm64-cpu.tar.gz" -C "${ARTIFACT_ROOT}" "quadtrix-macos-arm64-cpu"
 
       - name: Upload artifact
         uses: actions/upload-artifact@v4
         with:
-          name: quadtrix-macos-${{ matrix.arch }}-cpu
-          path: ${{ matrix.artifact }}
+          name: quadtrix-macos-arm64-cpu
+          path: quadtrix-macos-arm64-cpu.tar.gz
           if-no-files-found: error
           retention-days: 30
 
@@ -216,8 +205,21 @@ jobs:
       - prepare-release
       - build-linux
       - build-windows
-      - build-macos
+      - build-macos-x64
+      - build-macos-arm64
     runs-on: ubuntu-latest
+    
+    if: |
+      always() &&
+      needs.prepare-release.result == 'success' &&
+      needs.build-linux.result == 'success' &&
+      needs.build-windows.result == 'success' &&
+      needs.build-macos-x64.result == 'success' &&
+      (
+        needs.build-macos-arm64.result == 'success' ||
+        needs.build-macos-arm64.result == 'cancelled' ||
+        needs.build-macos-arm64.result == 'skipped'
+      )
     permissions:
       contents: write
     steps:
