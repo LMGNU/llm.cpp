@@ -1,83 +1,79 @@
 name: Release
 
 on:
-  push:
-    tags:
-      - "v*"
   workflow_dispatch:
     inputs:
       version:
-        description: "Release version, with or without a leading v"
+        description: "Release version, for example v1.2.3 or 1.2.3"
         required: true
+
+concurrency:
+  group: release
+  cancel-in-progress: false
 
 env:
   ARTIFACT_ROOT: release-assets
 
 jobs:
-  prepare-release:
-    name: Prepare release metadata
+  release-metadata:
+    name: Release metadata
     runs-on: ubuntu-latest
     outputs:
-      tag_name: ${{ steps.meta.outputs.tag_name }}
-      version: ${{ steps.meta.outputs.version }}
+      tag_name: ${{ steps.tag.outputs.tag_name }}
     steps:
-      - id: meta
+      - id: tag
         shell: bash
         run: |
           set -euo pipefail
-          if [ "${GITHUB_EVENT_NAME}" = "workflow_dispatch" ]; then
-            raw_version="${{ inputs.version }}"
+          raw_tag="${{ inputs.version }}"
+          if [[ "${raw_tag}" == v* ]]; then
+            tag_name="${raw_tag}"
           else
-            raw_version="${GITHUB_REF_NAME}"
+            tag_name="v${raw_tag}"
           fi
-
-          raw_version="${raw_version#v}"
-          tag_name="v${raw_version}"
-
           echo "tag_name=${tag_name}" >> "$GITHUB_OUTPUT"
-          echo "version=${raw_version}" >> "$GITHUB_OUTPUT"
 
-  build-linux:
-    name: Linux ${{ matrix.arch }} CPU
-    needs: prepare-release
-    runs-on: ${{ matrix.runner }}
+  ubuntu-cpu:
+    name: Ubuntu ${{ matrix.build }} CPU
+    needs: release-metadata
+    runs-on: ${{ matrix.os }}
     strategy:
       fail-fast: false
       matrix:
         include:
-          - arch: x64
-            runner: ubuntu-22.04
-            compiler: g++
-            packages: build-essential file
-            cxxflags: -std=c++17 -O3 -march=native
-            artifact: quadtrix-ubuntu-x64-cpu.tar.gz
-          - arch: arm64
-            runner: ubuntu-24.04-arm
-            compiler: g++
-            packages: build-essential file
-            cxxflags: -std=c++17 -O3 -march=native
-            artifact: quadtrix-ubuntu-arm64-cpu.tar.gz
-          - arch: s390x
-            runner: ubuntu-22.04
-            compiler: s390x-linux-gnu-g++
-            packages: g++-s390x-linux-gnu file
-            cxxflags: -std=c++17 -O3
-            artifact: quadtrix-ubuntu-s390x-cpu.tar.gz
+          - build: x64
+            os: ubuntu-22.04
+          - build: arm64
+            os: ubuntu-24.04-arm
+          - build: s390x
+            os: ubuntu-24.04-s390x
     steps:
-      - uses: actions/checkout@v4
+      - name: Clone
+        uses: actions/checkout@v4
+        with:
+          fetch-depth: 0
 
-      - name: Install toolchain
+      - name: Dependencies
         shell: bash
         run: |
           set -euo pipefail
           sudo apt-get update
-          sudo apt-get install -y ${{ matrix.packages }}
+          sudo apt-get install -y build-essential file
 
-      - name: Build binary
+      - name: Toolchain workaround
+        if: ${{ contains(matrix.os, 'ubuntu-24.04') }}
         shell: bash
         run: |
           set -euo pipefail
-          ${{ matrix.compiler }} ${{ matrix.cxxflags }} \
+          sudo apt-get install -y gcc-14 g++-14
+          echo "CC=gcc-14" >> "$GITHUB_ENV"
+          echo "CXX=g++-14" >> "$GITHUB_ENV"
+
+      - name: Build
+        shell: bash
+        run: |
+          set -euo pipefail
+          ${CXX:-g++} -std=c++17 -O3 -DNDEBUG \
             -I. -Iinclude \
             -o quadtrix main.cpp
           file quadtrix
@@ -89,88 +85,97 @@ jobs:
           ./quadtrix --chat >/dev/null 2>&1
           exit 0
 
-      - name: Package artifact
+      - name: Pack artifacts
         shell: bash
         run: |
           set -euo pipefail
-          mkdir -p "${ARTIFACT_ROOT}/quadtrix-ubuntu-${{ matrix.arch }}-cpu"
-          cp quadtrix "${ARTIFACT_ROOT}/quadtrix-ubuntu-${{ matrix.arch }}-cpu/"
-          cp README.md LICENSE "${ARTIFACT_ROOT}/quadtrix-ubuntu-${{ matrix.arch }}-cpu/"
-          tar -czf "${{ matrix.artifact }}" -C "${ARTIFACT_ROOT}" "quadtrix-ubuntu-${{ matrix.arch }}-cpu"
+          package="quadtrix-${{ needs.release-metadata.outputs.tag_name }}-bin-ubuntu-${{ matrix.build }}-cpu"
+          mkdir -p "${ARTIFACT_ROOT}/${package}"
+          cp quadtrix README.md LICENSE "${ARTIFACT_ROOT}/${package}/"
+          tar -czf "${package}.tar.gz" -C "${ARTIFACT_ROOT}" "${package}"
 
-      - name: Upload artifact
+      - name: Upload artifacts
         uses: actions/upload-artifact@v4
         with:
-          name: quadtrix-ubuntu-${{ matrix.arch }}-cpu
-          path: ${{ matrix.artifact }}
+          name: quadtrix-bin-ubuntu-${{ matrix.build }}-cpu
+          path: quadtrix-${{ needs.release-metadata.outputs.tag_name }}-bin-ubuntu-${{ matrix.build }}-cpu.tar.gz
           if-no-files-found: error
           retention-days: 30
 
-  build-windows:
+  windows-cpu:
     name: Windows ${{ matrix.arch }} CPU
-    needs: prepare-release
-    runs-on: ${{ matrix.runner }}
+    needs: release-metadata
+    runs-on: windows-2022
     strategy:
       fail-fast: false
       matrix:
         include:
           - arch: x64
-            runner: windows-latest
-            msvc_arch: x64
-            artifact: quadtrix-windows-x64-cpu.zip
+            vcvars: x64
           - arch: arm64
-            runner: windows-11-arm
-            msvc_arch: arm64
-            artifact: quadtrix-windows-arm64-cpu.zip
+            vcvars: amd64_arm64
     steps:
-      - uses: actions/checkout@v4
-
-      - name: Set up MSVC
-        uses: ilammy/msvc-dev-cmd@v1
+      - name: Clone
+        uses: actions/checkout@v4
         with:
-          arch: ${{ matrix.msvc_arch }}
+          fetch-depth: 0
 
-      - name: Build binary
+      - name: Build
         shell: cmd
         run: |
-          cl /nologo /std:c++17 /O2 /EHsc /Iinclude /I. main.cpp /Fe:quadtrix.exe
+          call "C:\Program Files\Microsoft Visual Studio\2022\Enterprise\VC\Auxiliary\Build\vcvarsall.bat" ${{ matrix.vcvars }}
+          cl /nologo /std:c++17 /O2 /DNDEBUG /EHsc /Iinclude /I. main.cpp /Fe:quadtrix.exe
 
       - name: Smoke test
+        if: ${{ matrix.arch == 'x64' }}
         shell: pwsh
         run: |
           $ErrorActionPreference = 'Continue'
           & .\quadtrix.exe --chat | Out-Null
           exit 0
 
-      - name: Package artifact
+      - name: Pack artifacts
         shell: pwsh
         run: |
-          New-Item -ItemType Directory -Force "${env:ARTIFACT_ROOT}\quadtrix-windows-${{ matrix.arch }}-cpu" | Out-Null
-          Copy-Item quadtrix.exe "${env:ARTIFACT_ROOT}\quadtrix-windows-${{ matrix.arch }}-cpu\"
-          Copy-Item README.md, LICENSE "${env:ARTIFACT_ROOT}\quadtrix-windows-${{ matrix.arch }}-cpu\"
-          Compress-Archive -Path "${env:ARTIFACT_ROOT}\quadtrix-windows-${{ matrix.arch }}-cpu\*" -DestinationPath "${{ matrix.artifact }}" -Force
+          $package = "quadtrix-${{ needs.release-metadata.outputs.tag_name }}-bin-windows-${{ matrix.arch }}-cpu"
+          New-Item -ItemType Directory -Force "${env:ARTIFACT_ROOT}\${package}" | Out-Null
+          Copy-Item quadtrix.exe "${env:ARTIFACT_ROOT}\${package}\"
+          Copy-Item README.md, LICENSE "${env:ARTIFACT_ROOT}\${package}\"
+          Compress-Archive -Path "${env:ARTIFACT_ROOT}\${package}\*" -DestinationPath "${package}.zip" -Force
 
-      - name: Upload artifact
+      - name: Upload artifacts
         uses: actions/upload-artifact@v4
         with:
-          name: quadtrix-windows-${{ matrix.arch }}-cpu
-          path: ${{ matrix.artifact }}
+          name: quadtrix-bin-windows-${{ matrix.arch }}-cpu
+          path: quadtrix-${{ needs.release-metadata.outputs.tag_name }}-bin-windows-${{ matrix.arch }}-cpu.zip
           if-no-files-found: error
           retention-days: 30
 
-  # Optional — cancelling this job will not block the release
-  build-macos-arm64:
-    name: macOS arm64 CPU
-    needs: prepare-release
-    runs-on: macos-14
+  macos-cpu:
+    name: macOS ${{ matrix.build }} CPU
+    needs: release-metadata
+    runs-on: ${{ matrix.os }}
+    strategy:
+      fail-fast: false
+      matrix:
+        include:
+          - build: arm64
+            arch: arm64
+            os: macos-14
+          - build: x64
+            arch: x86_64
+            os: macos-13
     steps:
-      - uses: actions/checkout@v4
+      - name: Clone
+        uses: actions/checkout@v4
+        with:
+          fetch-depth: 0
 
-      - name: Build binary
+      - name: Build
         shell: bash
         run: |
           set -euo pipefail
-          clang++ -std=c++17 -O3 -arch arm64 \
+          clang++ -std=c++17 -O3 -DNDEBUG -arch ${{ matrix.arch }} \
             -I. -Iinclude \
             -o quadtrix main.cpp
           file quadtrix
@@ -182,45 +187,35 @@ jobs:
           ./quadtrix --chat >/dev/null 2>&1
           exit 0
 
-      - name: Package artifact
+      - name: Pack artifacts
         shell: bash
         run: |
           set -euo pipefail
-          mkdir -p "${ARTIFACT_ROOT}/quadtrix-macos-arm64-cpu"
-          cp quadtrix "${ARTIFACT_ROOT}/quadtrix-macos-arm64-cpu/"
-          cp README.md LICENSE "${ARTIFACT_ROOT}/quadtrix-macos-arm64-cpu/"
-          tar -czf "quadtrix-macos-arm64-cpu.tar.gz" -C "${ARTIFACT_ROOT}" "quadtrix-macos-arm64-cpu"
+          package="quadtrix-${{ needs.release-metadata.outputs.tag_name }}-bin-macos-${{ matrix.build }}-cpu"
+          mkdir -p "${ARTIFACT_ROOT}/${package}"
+          cp quadtrix README.md LICENSE "${ARTIFACT_ROOT}/${package}/"
+          tar -czf "${package}.tar.gz" -C "${ARTIFACT_ROOT}" "${package}"
 
-      - name: Upload artifact
+      - name: Upload artifacts
         uses: actions/upload-artifact@v4
         with:
-          name: quadtrix-macos-arm64-cpu
-          path: quadtrix-macos-arm64-cpu.tar.gz
+          name: quadtrix-bin-macos-${{ matrix.build }}-cpu
+          path: quadtrix-${{ needs.release-metadata.outputs.tag_name }}-bin-macos-${{ matrix.build }}-cpu.tar.gz
           if-no-files-found: error
           retention-days: 30
 
   publish-release:
     name: Publish GitHub release
     needs:
-      - prepare-release
-      - build-linux
-      - build-windows
-      - build-macos-arm64
+      - release-metadata
+      - ubuntu-cpu
+      - windows-cpu
+      - macos-cpu
     runs-on: ubuntu-latest
-    if: |
-      always() &&
-      needs.prepare-release.result == 'success' &&
-      needs.build-linux.result == 'success' &&
-      needs.build-windows.result == 'success' &&
-      (
-        needs.build-macos-arm64.result == 'success' ||
-        needs.build-macos-arm64.result == 'cancelled' ||
-        needs.build-macos-arm64.result == 'skipped'
-      )
     permissions:
       contents: write
     steps:
-      - name: Download all artifacts
+      - name: Download artifacts
         uses: actions/download-artifact@v4
         with:
           path: dist
@@ -229,7 +224,8 @@ jobs:
       - name: Publish release
         uses: softprops/action-gh-release@v2
         with:
-          tag_name: ${{ needs.prepare-release.outputs.tag_name }}
+          tag_name: ${{ needs.release-metadata.outputs.tag_name }}
           target_commitish: ${{ github.sha }}
+          prerelease: false
           files: dist/*
           generate_release_notes: true
