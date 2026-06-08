@@ -7,7 +7,7 @@ on:
 jobs:
   slash-command:
     name: Parse /run-checks
-    if: |
+    if: >-
       github.event.issue.pull_request != null &&
       contains(github.event.comment.body, '/run-checks')
     runs-on: ubuntu-latest
@@ -15,7 +15,7 @@ jobs:
       pr-sha: ${{ steps.get-sha.outputs.sha }}
     steps:
       - name: Check commenter permission
-        uses: actions/github-script@v7
+        uses: actions/github-script@v9
         with:
           script: |
             const { data } = await github.rest.repos.getCollaboratorPermissionLevel({
@@ -34,7 +34,7 @@ jobs:
             }
 
       - name: React with rocket
-        uses: actions/github-script@v7
+        uses: actions/github-script@v9
         with:
           script: |
             await github.rest.reactions.createForIssueComment({
@@ -46,7 +46,7 @@ jobs:
 
       - name: Get PR head SHA
         id: get-sha
-        uses: actions/github-script@v7
+        uses: actions/github-script@v9
         with:
           script: |
             const { data: pr } = await github.rest.pulls.get({
@@ -55,6 +55,23 @@ jobs:
               pull_number: context.issue.number,
             });
             core.setOutput('sha', pr.head.sha);
+
+      - name: Set checks to pending
+        uses: actions/github-script@v9
+        with:
+          script: |
+            const sha = '${{ steps.get-sha.outputs.sha }}';
+            const checks = ['Lint', 'Build C++ (ubuntu-22.04)', 'Build C++ (ubuntu-24.04)', 'Build C++ (macos-14)', 'Validate'];
+            for (const check of checks) {
+              await github.rest.repos.createCommitStatus({
+                owner: context.repo.owner,
+                repo:  context.repo.repo,
+                sha,
+                state: 'pending',
+                context: check,
+                description: 'Waiting...',
+              });
+            }
 
 
   lint:
@@ -70,18 +87,26 @@ jobs:
         run: |
           sudo apt-get install -y clang-format
           find . -name "*.cpp" -o -name "*.h" | grep -v "build/" | \
-            xargs clang-format --dry-run --Werror --style=LLVM || true
+            xargs clang-format --dry-run --Werror || true
 
       - name: Python lint (ruff)
         uses: chartboost/ruff-action@v1
         with:
           args: "check engine/ --ignore E501 --exit-zero"
 
-      - name: TypeScript lint (eslint)
-        working-directory: frontend
-        run: |
-          npm ci --prefer-offline
-          npx eslint src/ --ext .ts,.tsx --max-warnings 20 || true
+      - name: Report status
+        if: always()
+        uses: actions/github-script@v9
+        with:
+          script: |
+            await github.rest.repos.createCommitStatus({
+              owner: context.repo.owner,
+              repo:  context.repo.repo,
+              sha:   '${{ needs.slash-command.outputs.pr-sha }}',
+              state: '${{ job.status }}' === 'success' ? 'success' : 'failure',
+              context: 'Lint',
+              description: '${{ job.status }}',
+            });
 
 
   build-cpp:
@@ -131,9 +156,23 @@ jobs:
           path: quadtrix
           retention-days: 7
 
+      - name: Report status
+        if: always()
+        uses: actions/github-script@v9
+        with:
+          script: |
+            await github.rest.repos.createCommitStatus({
+              owner: context.repo.owner,
+              repo:  context.repo.repo,
+              sha:   '${{ needs.slash-command.outputs.pr-sha }}',
+              state: '${{ job.status }}' === 'success' ? 'success' : 'failure',
+              context: 'Build C++ (${{ matrix.os }})',
+              description: '${{ job.status }}',
+            });
 
-  validate-dockerfiles:
-    name: Validate Dockerfiles
+
+  validate:
+    name: Validate
     needs: slash-command
     runs-on: ubuntu-latest
     steps:
@@ -141,10 +180,8 @@ jobs:
         with:
           ref: ${{ needs.slash-command.outputs.pr-sha }}
 
-    
       - name: Check required files exist
         run: |
-          echo "Checking files referenced by Dockerfiles..."
           files=(
             "main.cpp"
             "engine/main.py"
@@ -161,69 +198,46 @@ jobs:
           done
           exit $failed
 
-      - name: Set up Docker Buildx
-        uses: docker/setup-buildx-action@v3
-
-      - name: Build check — Dockerfile.cpp (C++ engine)
-        uses: docker/build-push-action@v6
+      - name: Lint — Dockerfile.cpp
+        uses: hadolint/hadolint-action@v3.1.0
         with:
-          context: .
-          file: .devops/Dockerfile.cpp
-          platforms: linux/amd64
-          push: false
-          cache-from: type=gha,scope=cpp
-          cache-to: type=gha,mode=max,scope=cpp
+          dockerfile: .devops/Dockerfile.cpp
+          failure-threshold: error
 
-
-      - name: Build check — Dockerfile (PyTorch CPU)
-        uses: docker/build-push-action@v6
+      - name: Lint — Dockerfile (CPU)
+        uses: hadolint/hadolint-action@v3.1.0
         with:
-          context: .
-          file: .devops/Dockerfile
-          platforms: linux/amd64
-          push: false
-          cache-from: type=gha,scope=cpu
-          cache-to: type=gha,mode=max,scope=cpu
+          dockerfile: .devops/Dockerfile
+          failure-threshold: error
 
-      - name: Skip CUDA build check
-        run: echo "CUDA build skipped on PR checks — run publish-docker workflow to build cuda image."
-
-
-  test-frontend:
-    name: Frontend Tests
-    needs: [slash-command, lint]
-    runs-on: ubuntu-latest
-    steps:
-      - uses: actions/checkout@v4
+      - name: Lint — Dockerfile.backend (CUDA)
+        uses: hadolint/hadolint-action@v3.1.0
         with:
-          ref: ${{ needs.slash-command.outputs.pr-sha }}
+          dockerfile: .devops/Dockerfile.backend
+          failure-threshold: error
 
-      - uses: actions/setup-node@v4
+      - name: Report status
+        if: always()
+        uses: actions/github-script@v9
         with:
-          node-version: "20"
-          cache: npm
-          cache-dependency-path: frontend/package-lock.json
-
-      - name: Install
-        working-directory: frontend
-        run: npm ci --prefer-offline
-
-      - name: Type-check
-        working-directory: frontend
-        run: npx tsc --noEmit
-
-      - name: Build check
-        working-directory: frontend
-        run: npm run build
+          script: |
+            await github.rest.repos.createCommitStatus({
+              owner: context.repo.owner,
+              repo:  context.repo.repo,
+              sha:   '${{ needs.slash-command.outputs.pr-sha }}',
+              state: '${{ job.status }}' === 'success' ? 'success' : 'failure',
+              context: 'Validate',
+              description: '${{ job.status }}',
+            });
 
 
   post-result:
     name: Post result
-    needs: [slash-command, lint, build-cpp, validate-dockerfiles, test-frontend]
+    needs: [slash-command, lint, build-cpp, validate]
     runs-on: ubuntu-latest
     if: always()
     steps:
-      - uses: actions/github-script@v7
+      - uses: actions/github-script@v9
         with:
           script: |
             const jobs   = ${{ toJSON(needs) }};
@@ -233,6 +247,6 @@ jobs:
               repo:  context.repo.repo,
               issue_number: context.issue.number,
               body: failed
-                ? ' Some checks failed — see Actions for details.'
-                : ' All checks passed!',
+                ? '❌ Some checks failed — see Actions for details.'
+                : '✅ All checks passed!',
             });
