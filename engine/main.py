@@ -6,10 +6,7 @@ import sys
 import os
 from pathlib import Path
 import tiktoken
-
-#
 #  LOGGING UTILITIES
-
 W = 78
 DOUBLE = "=" * W
 SINGLE = "-" * W
@@ -68,7 +65,7 @@ seed = 1337
 
 batch_size = 16
 block_size = 32
-max_iters = 6000
+max_iters = 20000
 eval_interval = 100
 learning_rate = 1e-3
 device = 'cuda' if torch.cuda.is_available() else 'cpu'
@@ -83,7 +80,7 @@ torch.manual_seed(seed)
 
 # tokenizer
 
-def get_tokenizer(encoding_name="gpt2"):
+def get_tokenizer(encoding_name="o200k"):
     tokenizer = tiktoken.get_encoding(encoding_name)
     vocab_size = tokenizer.n_vocab
     return tokenizer, vocab_size
@@ -97,7 +94,7 @@ def decode(tokens, tokenizer): return tokenizer.decode(tokens)
 with open(cleaned_path, 'r', encoding='utf-8') as f:
     text = f.read()
 
-tokenizer, vocab_size = get_tokenizer("gpt2")
+tokenizer, vocab_size = get_tokenizer("o200k")
 encoded_data = encode(text, tokenizer)
 
 data = torch.tensor(encoded_data, dtype=torch.long)
@@ -249,8 +246,6 @@ model = GPTLanguageModel().to(device)
 n_params = sum(p.numel() for p in model.parameters())
 optimizer = torch.optim.AdamW(model.parameters(), lr=learning_rate)
 
-# ── num_activations: real count via forward hooks on a dummy batch ───────────
-
 
 def count_activations(m, bs, seq_len, dev):
     total = 0
@@ -272,7 +267,7 @@ def count_activations(m, bs, seq_len, dev):
 
 _num_activations = count_activations(model, batch_size, block_size, device)
 
-# ── dataset batch counts ─────────────────────────────────────────────────────
+#
 _train_batches = len(train_data) // (batch_size * block_size)
 _val_batches = len(val_data) // (batch_size * block_size)
 
@@ -290,8 +285,6 @@ best_val_loss = float('inf')
 train_start = time.time()
 
 for iter in range(max_iters):
-
-    # ── val + checkpoint at eval_interval ────────────────────────────────────
     if iter % eval_interval == 0 or iter == max_iters - 1:
         losses = estimate_loss()
         is_best = losses['val'] < best_val_loss
@@ -300,8 +293,6 @@ for iter in range(max_iters):
             torch.save(model.state_dict(), 'best_model.pt')
         log(f"  val loss {losses['val']:.6f}")
         sys.stdout.flush()
-
-    # ── forward + backward ───────────────────────────────────────────────────
     step_start = time.time()
 
     xb, yb = get_batch('train')
@@ -330,7 +321,7 @@ for iter in range(max_iters):
     with open(LOG_PATH, "a", encoding="utf-8") as f:
         f.write(line + "\n")
 
-    # ── sample 100 tokens every 50 steps ─────────────────────────────────────
+    # sample 100 tokens every 50 steps
     if (iter + 1) % 50 == 0:
         model.eval()
         context = torch.zeros((1, 1), dtype=torch.long, device=device)
