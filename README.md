@@ -7,10 +7,9 @@
 
 
 </h1>
-Quadtrix.cpp is an experimental local LLM project that combines training, inference, and a chat interface in a single repository across three execution paths: a fully from-scratch C++ implementation, a PyTorch backend, and a React frontend.The C++ path implements a decoder-only transformer entirely by hand — no external tensor libraries, no automatic differentiation. It includes character-level tokenization, manual backpropagation, AdamW optimization, checkpointing, and autoregressive generation. This makes it a clear educational reference for how transformers work under the hood. The PyTorch path offers faster training and inference with BPE tokenization via tiktoken, while the React frontend provides a clean ChatGPT-style web UI on top of either backend.You can train small character-level models on CPU or Colab, or move to BPE-based models with the PyTorch backend. All paths are designed to be hackable and runnable on consumer hardware without requiring massive GPU clusters.
+Quadtrix.cpp is an experimental local LLM project that combines training, inference, and a chat interface in a single repository across three execution paths: a C++ versions, a PyTorch backend, and a React frontend.The C++ version is a decoder-only transformer - no external tensor libraries, no automatic differentiation. It includes character-level tokenization, backpropagation, AdamW optimization, checkpointing, and autoregressive generationd. The PyTorch version  offers faster training and inference with BPE tokenization via tiktoken, while the React frontend provides a  web UI on top of python backend.You can train small character-level models on CPU or Colab, or move to BPE-based models with the PyTorch backend. All version are designed to be hackable and runnable on consumer hardware without requiring massive GPU clusters.
 
-
-Full technical reference: [docs](https://eamon2009.github.io/LLMs/)
+***technical notes***: [docs](https://eamon2009.github.io/LLMs/)
 
 ## Leaderboard
 
@@ -91,8 +90,8 @@ g++ -std=c++17 -O3 -march=native -I. -Iinclude -o quadtrix.exe main.cpp
 
 
 ## Technical Reference
-Quadtrix is a decoder-only transformer. The architecture follows the standard GPT design with pre-layer normalization, causal self-attention, and residual connections.
-The C++ implementation is fully from scratch:
+***Quadtrix is a decoder-only transformer. The architecture follows the standard GPT design with pre-layer normalization, causal self-attention, and residual connections.***
+The C++ version is :
 
 - Character-level tokenizer
 - Manual tensor operations
@@ -101,7 +100,7 @@ The C++ implementation is fully from scratch:
 - Checkpoint save/load
 - Autoregressive generation
 
-** The PyTorch path uses torch.nn and tiktoken for faster experimentation and GPU acceleration.**
+**The PyTorch path uses torch.nn and tiktoken for faster experimentation and GPU acceleration.**
 
 ## File Structure 
 ```
@@ -113,6 +112,8 @@ Quadtrix.cpp/
 │   ├── tensor.h
 │   ├── gpt.h
 │   └── backward.h
+│   └── ...
+│ 
 ├── data/
 │   └── input.txt
 ├── engine/
