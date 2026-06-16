@@ -1,12 +1,10 @@
 # Quadtrix.cpp
 
 <h1 align="center">
-<img width="963" height="258" alt="image" src="https://github.com/user-attachments/assets/b49ea49d-5d62-419b-a5b3-5d5f84153242" />
+<img width="476" height="167" alt="image" src="https://github.com/user-attachments/assets/a7240b41-a38c-41c4-b25e-001398e6d54d" />
 <img width="957" height="233" alt="image" src="https://github.com/user-attachments/assets/6655701f-f423-49c1-9b54-967522abe2bf" />
-
-
-
 </h1>
+
 Quadtrix.cpp is an experimental local LLM project that combines training, inference, and a chat interface in a single repository across three execution paths: a C++ versions, a PyTorch backend, and a React frontend.The C++ version is a decoder-only transformer - no external tensor libraries, no automatic differentiation. It includes character-level tokenization, backpropagation, AdamW optimization, checkpointing, and autoregressive generationd. The PyTorch version  offers faster training and inference with BPE tokenization via tiktoken, while the React frontend provides a  web UI on top of python backend.You can train small character-level models on CPU or Colab, or move to BPE-based models with the PyTorch backend. All version are designed to be hackable and runnable on consumer hardware without requiring massive GPU clusters.
 
 ***technical notes***: [docs](https://eamon2009.github.io/LLMs/)
