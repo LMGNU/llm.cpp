@@ -17,10 +17,10 @@ Runs are ranked by validation loss. Lower is better.
 
 | # | Val Loss | Parameters | Time     | Hardware | Description                              |
 |--:|----------|------------|----------|----------|------------------------------------------|
-| 1 | **0.7176**   | 10.82M     | 61.3 min | Colab    | Large-scale run, coherent paragraphs, strong convergence |
-| 2 | 0.9250   | 1.99M      | 6.1 min  | T4 GPU   | Optimised run, fast training, stable learning            |
-| 3 | 1.3145   | 0.82M      | 39.4 min | CPU      | Baseline, small data                                     |
-| 4 | 1.6371   | 0.82M      | 76.2 min | CPU      | Extended CPU training, 3000 iterations                   |
+| 1 | **0.7176**   | 10.82M     | 61.3 min | NVIDIA T4    | Large-scale run, coherent paragraphs, strong convergence |
+| 2 | 0.9250   | 1.99M      | 6.1 min  | NVIDIA T4   | Optimised run, fast training, stable learning            |
+| 3 | 1.3145   | 0.82M      | 39.4 min | x64 CPU     | Baseline, small data                                     |
+| 4 | 1.6371   | 0.82M      | 76.2 min | x64 CPU      | Extended CPU training, 3000 iterations                   |
 
 All runs: @Eamon2009, 2026.
 
