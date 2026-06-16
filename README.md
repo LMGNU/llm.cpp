@@ -1,7 +1,9 @@
 # Quadtrix.cpp
 
 <h1 align="center">
-<img width="476" height="167" alt="image" src="https://github.com/user-attachments/assets/a7240b41-a38c-41c4-b25e-001398e6d54d" />
+<img width="957" height="233" alt="image" src="https://github.com/user-attachments/assets/953b5fb1-7922-44ec-946f-e855d3470e53" />
+
+
 <img width="957" height="233" alt="image" src="https://github.com/user-attachments/assets/6655701f-f423-49c1-9b54-967522abe2bf" />
 </h1>
 
