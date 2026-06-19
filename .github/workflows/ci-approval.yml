@@ -84,7 +84,7 @@ jobs:
         run: ./quadtrix --help || true
 
       - name: Upload binary
-        uses: actions/upload-artifact@v4
+        uses: actions/upload-artifact@v7
         with:
           name: quadtrix-linux-amd64
           path: quadtrix
@@ -111,7 +111,7 @@ jobs:
         run: tar -czf quadtrix-macos-arm64.tar.gz quadtrix
 
       - name: Upload binary
-        uses: actions/upload-artifact@v4
+        uses: actions/upload-artifact@v7
         with:
           name: quadtrix-macos-arm64
           path: quadtrix-macos-arm64.tar.gz
