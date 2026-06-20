@@ -93,7 +93,7 @@ jobs:
           tar -czf "${package}.tar.gz" -C "${ARTIFACT_ROOT}" "${package}"
 
       - name: Upload artifacts
-        uses: actions/upload-artifact@v4
+        uses: actions/upload-artifact@v7
         with:
           name: quadtrix-bin-ubuntu-${{ matrix.build }}-cpu
           path: quadtrix-${{ needs.release-metadata.outputs.tag_name }}-bin-ubuntu-${{ matrix.build }}-cpu.tar.gz
@@ -142,7 +142,7 @@ jobs:
           Compress-Archive -Path "${env:ARTIFACT_ROOT}\${package}\*" -DestinationPath "${package}.zip" -Force
 
       - name: Upload artifacts
-        uses: actions/upload-artifact@v4
+        uses: actions/upload-artifact@v7
         with:
           name: quadtrix-bin-windows-${{ matrix.arch }}-cpu
           path: quadtrix-${{ needs.release-metadata.outputs.tag_name }}-bin-windows-${{ matrix.arch }}-cpu.zip
@@ -192,7 +192,7 @@ jobs:
           tar -czf "${package}.tar.gz" -C "${ARTIFACT_ROOT}" "${package}"
 
       - name: Upload artifacts
-        uses: actions/upload-artifact@v4
+        uses: actions/upload-artifact@v7
         with:
           name: quadtrix-bin-macos-${{ matrix.build }}-cpu
           path: quadtrix-${{ needs.release-metadata.outputs.tag_name }}-bin-macos-${{ matrix.build }}-cpu.tar.gz
