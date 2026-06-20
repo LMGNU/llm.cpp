@@ -150,7 +150,7 @@ jobs:
         run: ./quadtrix --help || true
 
       - name: Upload artifact
-        uses: actions/upload-artifact@v4
+        uses: actions/upload-artifact@v7
         with:
           name: ${{ matrix.artifact }}
           path: quadtrix
