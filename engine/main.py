@@ -63,17 +63,19 @@ cleaned_path = Path(os.environ.get("data", SCRIPT_DIR / "input.txt"))
 train_split = 0.9
 seed = 1337
 
-batch_size = 16
-block_size = 32
-max_iters = 20000
-eval_interval = 100
-learning_rate = 1e-3
+
 device = 'cuda' if torch.cuda.is_available() else 'cpu'
-eval_iters = 20
-n_embd = 64
-n_head = 4
-n_layer = 4
 dropout = 0.1
+block_size = 256     
+n_embd = 192         
+n_head = 6           
+n_layer = 6          
+batch_size = 64      
+max_iters = 5000     
+eval_interval = 250  
+learning_rate = 6e-4 
+eval_iters = 200     
+dropout = 0.1        
 
 torch.manual_seed(seed)
 
