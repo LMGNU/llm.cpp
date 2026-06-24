@@ -1,8 +1,8 @@
 # llm.cpp
 
 <h1 align="center">
-<img width="717" height="145" alt="image" src="https://github.com/user-attachments/assets/bf4511d8-4fb4-449c-b8e7-e936e4d8d164" />
-<img width="717" height="145" alt="image" src="https://github.com/user-attachments/assets/284d90f1-cec7-4927-beb4-0aed0509a547" />
+<img  width="957" height="233" alt="image" src="https://github.com/user-attachments/assets/bf4511d8-4fb4-449c-b8e7-e936e4d8d164" />
+<img  width="957" height="233" alt="image" src="https://github.com/user-attachments/assets/284d90f1-cec7-4927-beb4-0aed0509a547" />
 
 
 </h1>
