@@ -1,15 +1,15 @@
 # llm.cpp
 
 <h1 align="center">
-<img width="957" height="233" alt="image" src="https://github.com/user-attachments/assets/953b5fb1-7922-44ec-946f-e855d3470e53" />
+<img width="717" height="145" alt="image" src="https://github.com/user-attachments/assets/bf4511d8-4fb4-449c-b8e7-e936e4d8d164" />
+<img width="717" height="145" alt="image" src="https://github.com/user-attachments/assets/284d90f1-cec7-4927-beb4-0aed0509a547" />
 
 
-<img width="957" height="233" alt="image" src="https://github.com/user-attachments/assets/6655701f-f423-49c1-9b54-967522abe2bf" />
 </h1>
 
-Quadtrix.cpp is an experimental local LLM project that combines training, inference, and a chat interface in a single repository across three execution paths: a C++ versions, a PyTorch backend, and a React frontend.The C++ version is a decoder-only transformer - no external tensor libraries, no automatic differentiation. It includes character-level tokenization, backpropagation, AdamW optimization, checkpointing, and autoregressive generationd. The PyTorch version  offers faster training and inference with BPE tokenization via tiktoken, while the React frontend provides a  web UI on top of python backend.You can train small character-level models on CPU or Colab, or move to BPE-based models with the PyTorch backend. All version are designed to be hackable and runnable on consumer hardware without requiring massive GPU clusters.
+llm.cpp is an experimental local LLM project that combines training, inference, and a chat interface in a single repository across three execution paths: a C++ versions, a PyTorch backend, and a React frontend.The C++ version is a decoder-only transformer - no external tensor libraries, no automatic differentiation. It includes character-level tokenization, backpropagation, AdamW optimization, checkpointing, and autoregressive generationd. The PyTorch version  offers faster training and inference with BPE tokenization via tiktoken, while the React frontend provides a  web UI on top of python backend.You can train small character-level models on CPU or Colab, or move to BPE-based models with the PyTorch backend. All version are designed to be hackable and runnable on consumer hardware without requiring massive GPU clusters.
 
-***technical notes***: [docs](https://eamon2009.github.io/LLMs/)
+***technical notes***: [notes](https://eamon2009.github.io/LLMs/)
 
 ## Leaderboard
 
