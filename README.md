@@ -3,7 +3,7 @@
 <h1 align="center">
 <img  width="957" height="233" alt="image" src="https://github.com/user-attachments/assets/bf4511d8-4fb4-449c-b8e7-e936e4d8d164" />
 </h1>
-Language models in simple, dependency-free C++, with no need for 245MB of PyTorch or 107MB of cPython to understand how a transformer actually works. The native path is a from-scratch decoder-only GPT: tensors, embeddings, multi-head causal self-attention, layer norm, cross-entropy, and a analytical backward pass with AdamW, all in [main.cpp](main.cpp) and [include/](include/). No autograd, no framework - every gradient is derived and written out.
+Language models in dependency-free C++, with no need for 245MB of PyTorch or 107MB of Python to make a transformer actually works. The native path is a decoder-only GPT: tensors, embeddings, multi-head causal self-attention, layer norm, cross-entropy, and a analytical backward pass with AdamW, all in [main.cpp](main.cpp) and [include/](include/). No autograd, no framework - every gradient is derived and written out.
 
 Alongside it sits a parallel PyTorch implementation in [engine/main.py](engine/main.py) and [engine/inference.py](engine/inference.py), so you can train and generate the same architecture with `torch` + `tiktoken` when you want speed instead of transparency. A FastAPI middleware layer in [backend/](backend/) and a React/TypeScript web UI in [frontend/](frontend/) let you chat with either backend in the browser. There's also an experimental integrated-GPU path in [iGPU/](engine/iGPU/).
 
